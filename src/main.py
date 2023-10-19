@@ -1,3 +1,5 @@
+import pathlib
+
 from bs4 import BeautifulSoup
 import click
 from datetime import date, datetime
@@ -7,7 +9,7 @@ import requests
 from typing import Optional
 import csv
 
-from src.utils import generate_mapping, map_city_to_url, find_sun_rise_and_sun_set_time
+from utils import generate_mapping, map_city_to_url, find_sun_rise_and_sun_set_time
 
 BASE_URL="https://www.tide-forecast.com"
 
@@ -65,7 +67,7 @@ def parse_soup(soup: BeautifulSoup, city: str):
 @click.argument("cities_file",
                 type=click.File("r"))
 @click.option("--output_path",
-              type=click.Path(),
+              type=click.Path(dir_okay=True, path_type=pathlib.Path),
               help="output path to save the result"
               )
 def main(cities_file, output_path):
@@ -80,11 +82,15 @@ def main(cities_file, output_path):
 
     if output_path:
         filepath = Path(output_path)
-        with open(f"{filepath}/output.csv", "a+") as f:
-            fc = csv.DictWriter(f,
-                                fieldnames=["location", "date", "sunrise", "sunset", "low_tide_time", "height_in_ft"])
-            fc.writeheader()
-            fc.writerows(full_result)
+        if filepath.is_dir():
+            with open(f"{filepath}/output.csv", "a+") as f:
+                fc = csv.DictWriter(f,
+                                    fieldnames=["location", "date", "sunrise", "sunset", "low_tide_time", "height_in_ft"])
+                fc.writeheader()
+                fc.writerows(full_result)
+        else:
+            logging.error("path does not exist, printing results instead")
+            print(full_result)
     else:
         print(full_result)
 
